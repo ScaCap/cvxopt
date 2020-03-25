@@ -479,7 +479,7 @@ static PyObject *integer(PyObject *self, PyObject *args,
     double *a=NULL, val;
     char *kwlist[] = {"c", "G", "h", "A", "b", "lb", "ub", "I", "B", "options", NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwrds, "OOO|OOOOO", kwlist, &c,
+    if (!PyArg_ParseTupleAndKeywords(args, kwrds, "OOO|OOOOOOO", kwlist, &c,
 	    &G, &h, &A, &b, &lb, &ub, &IntSet, &BinSet, &opts)) return NULL;
 
     if ((Matrix_Check(G) && MAT_ID(G) != DOUBLE) ||
@@ -551,7 +551,14 @@ static PyObject *integer(PyObject *self, PyObject *args,
 
     for (i=0; i<n; i++){
         glp_set_obj_coef(lp, i+1, MAT_BUFD(c)[i]);
-        glp_set_col_bnds(lp, i+1, GLP_DB, MAT_BUFD(lb)[i], MAT_BUFD(ub)[i]);
+        if (MAT_BUFD(lb)[i] == MAT_BUFD(ub)[i])
+        {
+          glp_set_col_bnds(lp, i+1, GLP_FX, MAT_BUFD(lb)[i], MAT_BUFD(ub)[i]);
+        }
+        else 
+        {
+          glp_set_col_bnds(lp, i+1, GLP_DB, MAT_BUFD(lb)[i], MAT_BUFD(ub)[i]);
+        }
     }
     for (i=0; i<m; i++)
         glp_set_row_bnds(lp, i+1, GLP_UP, 0.0, MAT_BUFD(h)[i]);
