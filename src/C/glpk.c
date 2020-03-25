@@ -438,7 +438,7 @@ static PyObject *simplex(PyObject *self, PyObject *args, PyObject *kwrds)
 
 static char doc_integer[] =
     "Solves a mixed integer linear program using GLPK.\n\n"
-    "(status, x) = ilp(c, G, h, A, b, I, B)\n\n"
+    "(status, x) = ilp(c, G, h, A, b, lb, ub, I, B)\n\n"
     "PURPOSE\n"
     "Solves the mixed integer linear programming problem\n\n"
     "    minimize    c'*x\n"
@@ -452,6 +452,8 @@ static char doc_integer[] =
     "h            mx1 dense 'd' matrix\n\n"
     "A            pxn dense or sparse 'd' matrix with p>=0\n\n"
     "b            px1 dense 'd' matrix\n\n"
+    "lb           nx1 dense 'd' matrix\n\n"
+    "ub           nx1 dense 'd' matrix\n\n"
     "I            set of indices of integer variables\n\n"
     "B            set of indices of binary variables\n\n"
     "status       if status is 'optimal', 'feasible', or 'undefined',\n"
@@ -467,7 +469,7 @@ static char doc_integer[] =
 static PyObject *integer(PyObject *self, PyObject *args,
     PyObject *kwrds)
 {
-    matrix *c, *h, *b=NULL, *x=NULL;
+    matrix *c, *h, *b=NULL, *x=NULL, *lb=NULL, *ub=NULL;
     PyObject *G, *A=NULL, *IntSet=NULL, *BinSet = NULL;
     PyObject *t=NULL, *param, *key, *value, *opts=NULL;
     glp_prob *lp;
@@ -475,10 +477,10 @@ static PyObject *integer(PyObject *self, PyObject *args,
     int m, n, p, i, j, k, nnz, nnzmax, *rn=NULL, *cn=NULL, info, status;
     int_t pos=0;
     double *a=NULL, val;
-    char *kwlist[] = {"c", "G", "h", "A", "b", "I", "B", "options", NULL};
+    char *kwlist[] = {"c", "G", "h", "A", "b", "lb", "ub", "I", "B", "options", NULL};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwrds, "OOO|OOOOO", kwlist, &c,
-	    &G, &h, &A, &b, &IntSet, &BinSet, &opts)) return NULL;
+	    &G, &h, &A, &b, &lb, &ub, &IntSet, &BinSet, &opts)) return NULL;
 
     if ((Matrix_Check(G) && MAT_ID(G) != DOUBLE) ||
         (SpMatrix_Check(G) && SP_ID(G) != DOUBLE) ||
@@ -522,6 +524,20 @@ static PyObject *integer(PyObject *self, PyObject *args,
         PyErr_SetString(PyExc_ValueError, "incompatible dimensions");
         return NULL;
     }
+    
+    if ((PyObject *)lb == Py_None) lb = NULL;
+    if (lb && (!Matrix_Check(lb) || lb->id != DOUBLE)) err_dbl_mtrx("lb");
+    if ((lb && (lb->nrows != n || lb->ncols != 1)) || (!lb && n !=0 )){
+        PyErr_SetString(PyExc_ValueError, "incompatible dimensions");
+        return NULL;
+    }
+    
+    if ((PyObject *)ub == Py_None) ub = NULL;
+    if (ub && (!Matrix_Check(ub) || ub->id != DOUBLE)) err_dbl_mtrx("ub");
+    if ((ub && (ub->nrows != n || ub->ncols != 1)) || (!ub && n !=0 )){
+        PyErr_SetString(PyExc_ValueError, "incompatible dimensions");
+        return NULL;
+    }
 
     if ((IntSet) && (!PyAnySet_Check(IntSet)))
         PY_ERR_TYPE("invalid integer index set");
@@ -535,7 +551,7 @@ static PyObject *integer(PyObject *self, PyObject *args,
 
     for (i=0; i<n; i++){
         glp_set_obj_coef(lp, i+1, MAT_BUFD(c)[i]);
-        glp_set_col_bnds(lp, i+1, GLP_FR, 0.0, 0.0);
+        glp_set_col_bnds(lp, i+1, GLP_DB, MAT_BUFD(lb)[i], MAT_BUFD(ub)[i]);
     }
     for (i=0; i<m; i++)
         glp_set_row_bnds(lp, i+1, GLP_UP, 0.0, MAT_BUFD(h)[i]);
