@@ -35,15 +35,15 @@ class TestGLPK(unittest.TestCase):
     def test_ilp(self):
         from cvxopt import glpk, matrix
         c,G,h,A,b = self._prob_data
-        sol1 = glpk.ilp(c, G, h, A, b, set([0]), set())
+        sol1 = glpk.ilp(c, G, h, A, b, None, None, set([0]), set())
         self.assertTrue(sol1[0]=='optimal')
-        sol2 = glpk.ilp(c, G, h, A, b, set([0]), set())
+        sol2 = glpk.ilp(c, G, h, A, b, None, None, set([0]), set())
         self.assertTrue(sol2[0]=='optimal')
-        sol3 = glpk.ilp(c, G, h, None, None, set([0, 1]), set())
+        sol3 = glpk.ilp(c, G, h, None, None, None, None, set([0, 1]), set())
         self.assertTrue(sol3[0]=='optimal')
-        sol4 = glpk.ilp(c, G, h, None, None, set(), set([1]))
+        sol4 = glpk.ilp(c, G, h, None, None, None, None, set(), set([1]))
         self.assertTrue(sol4[0]=='optimal')
-        sol5 = glpk.ilp(c, G, h, A, matrix(-1.0), set(), set([0,1]))
+        sol5 = glpk.ilp(c, G, h, A, matrix(-1.0), None, None, set(), set([0,1]))
         self.assertTrue(sol5[0]=='LP relaxation is primal infeasible')
 
     def test_options(self):
@@ -63,13 +63,13 @@ class TestGLPK(unittest.TestCase):
         sol5 = solvers.lp(c,G,h,solver='glpk',options={'glpk':{'msg_lev' : 'GLP_MSG_ON'}})
         self.assertTrue(sol5['status']=='optimal')
 
-        sol1 = glpk.ilp(c,G,h,None,None,set(),set([0,1]))
+        sol1 = glpk.ilp(c,G,h,None,None, None, None,set(),set([0,1]))
         self.assertTrue(sol1[0]=='optimal')
-        sol2 = glpk.ilp(c,G,h,A,b,set([0,1]),set())
+        sol2 = glpk.ilp(c,G,h,A,b, None, None,set([0,1]),set())
         self.assertTrue(sol2[0]=='optimal')
-        sol3 = glpk.ilp(c,G,h,None,None,set(),set([0,1]),options={'msg_lev' : 'GLP_MSG_ALL'})
+        sol3 = glpk.ilp(c,G,h,None,None, None, None,set(),set([0,1]),options={'msg_lev' : 'GLP_MSG_ALL'})
         self.assertTrue(sol3[0]=='optimal')
-        sol4 = glpk.ilp(c,G,h,A,b,set(),set([0]),options={'msg_lev' : 'GLP_MSG_ALL'})
+        sol4 = glpk.ilp(c,G,h,A,b, None, None,set(),set([0]),options={'msg_lev' : 'GLP_MSG_ALL'})
         self.assertTrue(sol4[0]=='optimal')
 
         solvers.options['glpk'] = {'msg_lev' : 'GLP_MSG_ON'}
