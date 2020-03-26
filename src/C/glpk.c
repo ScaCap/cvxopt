@@ -527,14 +527,14 @@ static PyObject *integer(PyObject *self, PyObject *args,
     
     if ((PyObject *)lb == Py_None) lb = NULL;
     if (lb && (!Matrix_Check(lb) || lb->id != DOUBLE)) err_dbl_mtrx("lb");
-    if ((lb && (lb->nrows != n || lb->ncols != 1)) || (!lb && n !=0 )){
+    if (lb && (lb->nrows != n || lb->ncols != 1)){
         PyErr_SetString(PyExc_ValueError, "incompatible dimensions");
         return NULL;
     }
     
     if ((PyObject *)ub == Py_None) ub = NULL;
     if (ub && (!Matrix_Check(ub) || ub->id != DOUBLE)) err_dbl_mtrx("ub");
-    if ((ub && (ub->nrows != n || ub->ncols != 1)) || (!ub && n !=0 )){
+    if (ub && (ub->nrows != n || ub->ncols != 1)){
         PyErr_SetString(PyExc_ValueError, "incompatible dimensions");
         return NULL;
     }
@@ -551,13 +551,24 @@ static PyObject *integer(PyObject *self, PyObject *args,
 
     for (i=0; i<n; i++){
         glp_set_obj_coef(lp, i+1, MAT_BUFD(c)[i]);
-        if (MAT_BUFD(lb)[i] == MAT_BUFD(ub)[i])
-        {
-          glp_set_col_bnds(lp, i+1, GLP_FX, MAT_BUFD(lb)[i], MAT_BUFD(ub)[i]);
+        if (lb && ub){
+            if (MAT_BUFD(lb)[i] == MAT_BUFD(ub)[i])
+            {
+              glp_set_col_bnds(lp, i+1, GLP_FX, MAT_BUFD(lb)[i], MAT_BUFD(ub)[i]);
+            }
+            else 
+            {
+              glp_set_col_bnds(lp, i+1, GLP_DB, MAT_BUFD(lb)[i], MAT_BUFD(ub)[i]);
+            }
         }
-        else 
-        {
-          glp_set_col_bnds(lp, i+1, GLP_DB, MAT_BUFD(lb)[i], MAT_BUFD(ub)[i]);
+        else if (lb){
+            glp_set_col_bnds(lp, i+1, GLP_LO, MAT_BUFD(lb)[i], 0.0);
+        }
+        else if (lb){
+            glp_set_col_bnds(lp, i+1, GLP_UP, 0.0, MAT_BUFD(ub)[i]);
+        }
+        else{
+            glp_set_col_bnds(lp, i+1, GLP_FR, 0.0, 0.0);
         }
     }
     for (i=0; i<m; i++)
