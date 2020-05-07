@@ -1011,6 +1011,11 @@ static PyObject *integer(PyObject *self, PyObject *args,
                 PYSTRING_FROMSTRING("solver failure"));
             break;
 
+	case GLP_INT_ASSERT:
+            PyTuple_SET_ITEM(t, 0, (PyObject *)
+                PYSTRING_FROMSTRING("assertion in check_integrality fails due to x being nan"));
+            break;
+
         case GLP_EROOT: /* only occurs if presolver is off */
         case GLP_ESTOP: /* only occurs when advanced interface is used */
         default:
